@@ -26,7 +26,7 @@ class FFTCircularLowPass(nn.Module):
         xr = torch.fft.ifftn(Xf, dim=(-2, -1)).real
         return xr
     
-class MultiScaleBlindDenoiser(nn.Module):
+class WCVD(nn.Module):
     def __init__(
         self,
         ns_list              = (3, 5, 7), 
@@ -39,7 +39,7 @@ class MultiScaleBlindDenoiser(nn.Module):
         super().__init__()
 
         self.subnets = nn.ModuleList([
-            BlindUNettest(
+            BlindCNN(
                 in_channels=in_channels,
                 mid_channels=mid_channels,
                 out_channels=out_channels,
@@ -52,18 +52,10 @@ class MultiScaleBlindDenoiser(nn.Module):
 
         init_w = torch.ones(len(ns_list), dtype=torch.float32) / len(ns_list)
         self.mix_weights = nn.Parameter(init_w)
+        img_size=(1024,1024)
+        self.lowpass = FFTCircularLowPass(Ns=min(ns_list), img_size=img_size)
 
     def forward(self, x):
-        """
-        x: (B, C, T, X, Y)
-
-        Returns
-        -------
-        combined : (B, C, T_out, X, Y)
-            Weighted sum of the three subnet outputs where
-                T_out = T - (Nt - 1)
-        """
-
         preds = [net(x) for net in self.subnets]        # list of (B,C,T',X,Y)
         preds = torch.stack(preds, dim=0)                  # (K,B,C,T',X,Y)
 
@@ -72,7 +64,8 @@ class MultiScaleBlindDenoiser(nn.Module):
 
         combined = (weights * preds).sum(dim=0)            # (B,C,T',X,Y)
         return combined
-    
+
+
 def special_padding_3d(input_tensor, pad):
     d_pad, h_pad, w_pad = pad
     if h_pad > 0:
@@ -111,7 +104,7 @@ class BlindConv3D(nn.Module):
         x = special_padding_3d(x, padding)
         return self.conv(x)
 
-class BlindUNettest(nn.Module):
+class BlindCNN(nn.Module):
     def __init__(
         self,
         in_channels=1,
@@ -120,7 +113,7 @@ class BlindUNettest(nn.Module):
         Nt=3, Ns=5,
         num_slayers=3,
     ):
-        super(BlindUNettest, self).__init__()       
+        super(BlindCNN, self).__init__()       
         layers = []
         conv_in_channels = in_channels
         conv_out_channels = mid_channels
@@ -149,3 +142,4 @@ class BlindUNettest(nn.Module):
     
     def forward(self, x):
         return self.layers(x)
+    

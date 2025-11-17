@@ -1,7 +1,7 @@
 import os, sys
 import torch
 import numpy as np
-from dudvd_ensemble import *
+from wcvd import *
 
 datname=sys.argv[1]
 outpath=f'../output'
@@ -16,8 +16,11 @@ if len(data.shape)!=5:
     print("Input data shape needs to be (Nt,Nx,Ny)")
     quit()
 
-denoise_net = MultiScaleBlindDenoiser(num_slayers=3,mid_channels=4).to(device)
-denoise_net=torch.load(f"../weights/denoising_model.pt",weights_only=False).to(device)
+denoise_net = WCVD(num_slayers=4,mid_channels=3).to(device)
+state_dict=torch.load(f"../weights/denoising_model_weights.pt",map_location=device,weights_only=True)
+denoise_net.load_state_dict(state_dict)
+denoise_net.eval()
+denoise_net.to(device)
 img_size=(data.shape[3],data.shape[4])
 lowpass = FFTCircularLowPass(Ns=3, img_size=img_size).to(device)
 denoised_data=lowpass(denoise_net(data))
