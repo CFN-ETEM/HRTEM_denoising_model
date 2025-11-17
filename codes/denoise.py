@@ -1,13 +1,7 @@
-import os
+import os, sys
 import torch
 import numpy as np
 from dudvd_ensemble import *
-from torch.optim import NAdam, RAdam, Adam, AdamW, SGD
-from torch.optim.lr_scheduler import ReduceLROnPlateau
-import torch.nn as nn
-import sys
-from PIL import Image
-from analysis_util import *
 
 datname=sys.argv[1]
 outpath=f'../output'
@@ -21,7 +15,7 @@ if len(datread.shape)==3:
 if len(data.shape)!=5:
     print("Input data shape needs to be (Nt,Nx,Ny)")
     quit()
-    
+
 denoise_net = MultiScaleBlindDenoiser(num_slayers=3,mid_channels=4).to(device)
 denoise_net=torch.load(f"../weights/denoising_model.pt",weights_only=False).to(device)
 img_size=(data.shape[3],data.shape[4])
