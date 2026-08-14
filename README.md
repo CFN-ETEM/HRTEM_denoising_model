@@ -21,6 +21,7 @@ codes/
   wcvd.py            Model and low-pass filter definitions
 data/
   au.npy              Example HRTEM video
+  ...
 weights/
   denoising_model_weights.pt
 output/               Denoised videos are saved here
